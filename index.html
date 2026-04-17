@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Smart Student Management | TC System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    .app-wrapper {
+      position: relative;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+      padding: 2rem 1.5rem;
+      transition: filter 0.3s ease;
+    }
+    .app-wrapper.blur-active { filter: blur(8px); pointer-events: none; }
+    .search-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
+      visibility: hidden; opacity: 0;
+      transition: visibility 0.2s, opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .search-modal-overlay.active { visibility: visible; opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: white; border-radius: 2rem; max-width: 500px; width: 90%;
+      padding: 2rem; box-shadow: 0 30px 50px rgba(0,0,0,0.4);
+      animation: modalPop 0.3s ease; border-top: 8px solid #ffb347;
+    }
+    @keyframes modalPop { 0% { transform: scale(0.92); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid #ffefdb; padding-bottom: 0.8rem; }
+    .modal-header h3 { font-size: 1.6rem; font-weight: 700; color: #1e2f3a; display: flex; align-items: center; gap: 10px; }
+    .close-modal { background: none; border: none; font-size: 1.6rem; cursor: pointer; color: #8e9eae; }
+    .close-modal:hover { color: #e67e22; }
+    .info-row { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.2rem; border-bottom: 1px dashed #f0e5d8; padding-bottom: 0.7rem; }
+    .info-label { font-weight: 700; min-width: 75px; color: #2c5f6e; }
+    .btn-modal-close { background: linear-gradient(95deg, #ffb347, #ff9e2c); border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; margin-top: 1.5rem; width: 100%; cursor: pointer; }
+    .dashboard-container { max-width: 1400px; margin: 0 auto; background: rgba(255,255,255,0.92); backdrop-filter: blur(2px); border-radius: 2rem; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.25); overflow: hidden; }
+    .hero-header { background: linear-gradient(98deg, #1A2A3F 0%, #1e3c4a 100%); padding: 1.8rem 2rem; color: white; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 3px solid #ffb347; }
+    .title-section h1 { font-size: 1.9rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+    .title-section h1 i { background: #ffb347; padding: 10px; border-radius: 30px; color: #1e2f3a; }
+    .institution-badge, .stats-badge { background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); border-radius: 80px; padding: 0.5rem 1.3rem; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+    .stats-badge { font-size: 1.2rem; }
+    .content-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; padding: 1.8rem; }
+    .left-panel { flex: 1.2; min-width: 300px; }
+    .right-panel { flex: 1.8; min-width: 380px; }
+    .card { background: white; border-radius: 1.5rem; padding: 1.4rem; margin-bottom: 1.5rem; box-shadow: 0 8px 20px -6px rgba(0,0,0,0.08); }
+    .card h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; border-left: 4px solid #ffb347; padding-left: 0.8rem; color: #1e2f3a; }
+    .input-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-weight: 600; font-size: 0.85rem; color: #2c4c5c; }
+    .input-group input { padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 1rem; font-size: 0.9rem; outline: none; }
+    .input-group input:focus { border-color: #ffb347; box-shadow: 0 0 0 3px rgba(255,180,71,0.2); }
+    .btn-primary { background: linear-gradient(95deg, #ffb347, #ff9e2c); border: none; padding: 10px 18px; border-radius: 40px; font-weight: 600; color: #1e2f3a; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-outline { background: transparent; border: 1.5px solid #ffb347; padding: 8px 16px; border-radius: 40px; font-weight: 600; cursor: pointer; width: 100%; color: #2c4c5c; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-danger { border-color: #e07c4c; color: #b95a2e; }
+    .dist-tabs { display: flex; gap: 12px; margin-bottom: 1rem; border-bottom: 1px solid #e2edf2; padding-bottom: 0.5rem; }
+    .tab-btn { background: none; border: none; padding: 8px 18px; font-weight: 600; cursor: pointer; border-radius: 30px; color: #5b6f7e; }
+    .tab-btn.active { background: #ffb347; color: #1e2f3a; }
+    .dist-content { max-height: 320px; overflow-y: auto; }
+    .dist-item { background: #fef9f0; border-radius: 1rem; padding: 0.8rem 1rem; margin-bottom: 0.8rem; border-left: 4px solid #ffb347; }
+    .dist-header { display: flex; justify-content: space-between; font-weight: 700; color: #1e2f3a; }
+    .student-list-dist { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .student-chip { background: white; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid #ffe0b5; }
+    
+    /* Activity Log Slots */
+    .log-slots { display: flex; flex-direction: column; gap: 1rem; }
+    .log-slot { border: 1px solid #ffe6c7; border-radius: 1rem; overflow: hidden; }
+    .log-slot-header { background: #fef5e8; padding: 0.8rem 1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #ffe0b5; }
+    .log-slot-header i { font-size: 1.2rem; }
+    .log-slot-header .slot-count { margin-left: auto; background: #ffb34720; padding: 2px 10px; border-radius: 30px; font-size: 0.75rem; }
+    .log-list { max-height: 180px; overflow-y: auto; padding: 0.5rem; }
+    .log-entry { padding: 8px 10px; border-bottom: 1px solid #f0e5d8; display: flex; gap: 10px; align-items: center; font-size: 0.8rem; }
+    .log-entry i { width: 24px; color: #ffb347; }
+    .log-time { font-size: 0.7rem; color: #8e9eae; margin-left: auto; white-space: nowrap; }
+    .empty-log { text-align: center; color: #aaa; padding: 1rem; font-size: 0.8rem; }
+    
+    .setup-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 3000; visibility: visible; opacity: 1;
+      transition: all 0.3s ease;
+    }
+    .setup-overlay.hidden { visibility: hidden; opacity: 0; pointer-events: none; }
+    .setup-card { background: white; border-radius: 2rem; max-width: 450px; width: 90%; padding: 2rem; text-align: center; border-top: 8px solid #ffb347; }
+    .setup-input { width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 1rem; font-size: 1rem; margin: 1rem 0; }
+    .toast-notify { position: fixed; bottom: 25px; right: 25px; background: #1f2f3c; color: white; padding: 12px 24px; border-radius: 50px; z-index: 2100; display: flex; gap: 10px; animation: fadeSlideUp 0.3s ease; }
+    @keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #eef2f5; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #ffb347; border-radius: 10px; }
+    @media (max-width: 850px) { .content-grid { flex-direction: column; } }
+  </style>
+</head>
+<body>
+<div id="setupOverlay" class="setup-overlay">
+  <div class="setup-card">
+    <i class="fas fa-university" style="font-size: 3rem; color: #ffb347; margin-bottom: 1rem;"></i>
+    <h2>Welcome to Student Management System</h2>
+    <p>Please enter your institution name to continue</p>
+    <input type="text" id="institutionNameInput" class="setup-input" placeholder="e.g., Daffodil International University">
+    <button id="setupConfirmBtn" class="btn-primary" style="margin-top: 0;">Continue <i class="fas fa-arrow-right"></i></button>
+  </div>
+</div>
+
+<div class="app-wrapper" id="appWrapper">
+  <div class="dashboard-container">
+    <div class="hero-header">
+      <div class="title-section">
+        <h1><i class="fas fa-graduation-cap"></i> Smart Student Management</h1>
+      </div>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div class="institution-badge"><i class="fas fa-school"></i> <span id="institutionNameDisplay">Not set</span></div>
+        <div class="stats-badge"><i class="fas fa-users"></i> <span id="totalStudentsLive">0</span> students</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="left-panel">
+        <!-- Add Student Form -->
+        <div class="card">
+          <h3><i class="fas fa-user-plus"></i> Register New Student</h3>
+          <div class="input-group"><label>Full Name</label><input type="text" id="studentName" placeholder="e.g., MD. Sabbir Ahmed"></div>
+          <div class="input-group"><label>Class</label><input type="text" id="studentClass" placeholder="e.g., Class 1"></div>
+          <div class="input-group"><label>Subject</label><input type="text" id="studentSubject" placeholder="e.g., CSE"></div>
+          <div class="input-group"><label>Student ID (Unique)</label><input type="text" id="studentId" placeholder="e.g., 252-15-619"></div>
+          <button id="addStudentBtn" class="btn-primary"><i class="fas fa-save"></i> Add Student</button>
+        </div>
+
+        <!-- Separate Search & TC Section -->
+        <div class="card">
+          <h3><i class="fas fa-search"></i> Search Student</h3>
+          <div class="input-group"><label>Enter Student ID</label><input type="text" id="searchId" placeholder="Student ID to search"></div>
+          <button id="searchStudentBtn" class="btn-outline"><i class="fas fa-eye"></i> Search Student</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-file-alt"></i> Give TC (Transfer Certificate)</h3>
+          <div class="input-group"><label>Enter Student ID</label><input type="text" id="tcId" placeholder="Student ID to remove"></div>
+          <button id="giveTcBtn" class="btn-outline btn-danger"><i class="fas fa-trash-alt"></i> Issue TC</button>
+          <p style="font-size:0.7rem; margin-top:8px; color:#b95a2e;"><i class="fas fa-shield-alt"></i> TC removes student permanently</p>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <!-- Class & Subject Distribution Tabs -->
+        <div class="card">
+          <h3><i class="fas fa-chart-pie"></i> Analytics Distribution</h3>
+          <div class="dist-tabs">
+            <button class="tab-btn active" id="classTabBtn"><i class="fas fa-chalkboard"></i> Class-wise</button>
+            <button class="tab-btn" id="subjectTabBtn"><i class="fas fa-book"></i> Subject-wise</button>
+          </div>
+          <div id="classDistribution" class="dist-content"></div>
+          <div id="subjectDistribution" class="dist-content" style="display:none;"></div>
+        </div>
+
+        <!-- Separate Activity Log Slots -->
+        <div class="card">
+          <h3><i class="fas fa-history"></i> Activity Logs</h3>
+          <div class="log-slots">
+            <!-- Student Entry Log -->
+            <div class="log-slot">
+              <div class="log-slot-header">
+                <i class="fas fa-user-plus" style="color:#27ae60;"></i> Student Entry Records
+                <span class="slot-count" id="entryCount">0</span>
+              </div>
+              <div id="entryLogList" class="log-list">
+                <div class="empty-log">No entry records yet</div>
+              </div>
+            </div>
+            <!-- TC Log -->
+            <div class="log-slot">
+              <div class="log-slot-header">
+                <i class="fas fa-file-alt" style="color:#e67e22;"></i> TC Issued Records
+                <span class="slot-count" id="tcCount">0</span>
+              </div>
+              <div id="tcLogList" class="log-list">
+                <div class="empty-log">No TC records yet</div>
+              </div>
+            </div>
+            <!-- Search Log -->
+            <div class="log-slot">
+              <div class="log-slot-header">
+                <i class="fas fa-search" style="color:#3498db;"></i> Search Records
+                <span class="slot-count" id="searchCount">0</span>
+              </div>
+              <div id="searchLogList" class="log-list">
+                <div class="empty-log">No search records yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="searchModal" class="search-modal-overlay"><div class="modal-card" id="modalCard"></div></div>
+
+<script>
+  let students = [];
+  let institutionName = "";
+  
+  // Separate log arrays
+  let entryLogs = [];     // { studentName, className, subject, id, timestamp }
+  let tcLogs = [];        // { studentName, className, subject, id, timestamp }
+  let searchLogs = [];    // { searchedId, found, studentName, timestamp }
+
+  function addEntryLog(student) {
+    entryLogs.unshift({
+      studentName: student.name,
+      className: student.className,
+      subject: student.subject,
+      id: student.id,
+      timestamp: new Date().toLocaleString()
+    });
+    if(entryLogs.length > 30) entryLogs.pop();
+    renderEntryLog();
+  }
+
+  function addTCLog(student) {
+    tcLogs.unshift({
+      studentName: student.name,
+      className: student.className,
+      subject: student.subject,
+      id: student.id,
+      timestamp: new Date().toLocaleString()
+    });
+    if(tcLogs.length > 30) tcLogs.pop();
+    renderTCLog();
+  }
+
+  function addSearchLog(searchedId, found, studentName = null) {
+    searchLogs.unshift({
+      searchedId: searchedId,
+      found: found,
+      studentName: studentName,
+      timestamp: new Date().toLocaleString()
+    });
+    if(searchLogs.length > 30) searchLogs.pop();
+    renderSearchLog();
+  }
+
+  function renderEntryLog() {
+    const container = document.getElementById('entryLogList');
+    const countSpan = document.getElementById('entryCount');
+    countSpan.innerText = entryLogs.length;
+    if(entryLogs.length === 0) {
+      container.innerHTML = '<div class="empty-log">No entry records yet</div>';
+      return;
+    }
+    container.innerHTML = entryLogs.map(log => `
+      <div class="log-entry">
+        <i class="fas fa-user-plus"></i>
+        <span><strong>${escapeHtml(log.studentName)}</strong> | ${escapeHtml(log.className)} | ${escapeHtml(log.subject)} | ID: ${escapeHtml(log.id)}</span>
+        <span class="log-time">${log.timestamp}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderTCLog() {
+    const container = document.getElementById('tcLogList');
+    const countSpan = document.getElementById('tcCount');
+    countSpan.innerText = tcLogs.length;
+    if(tcLogs.length === 0) {
+      container.innerHTML = '<div class="empty-log">No TC records yet</div>';
+      return;
+    }
+    container.innerHTML = tcLogs.map(log => `
+      <div class="log-entry">
+        <i class="fas fa-file-alt"></i>
+        <span><strong>${escapeHtml(log.studentName)}</strong> | ${escapeHtml(log.className)} | ${escapeHtml(log.subject)} | ID: ${escapeHtml(log.id)}</span>
+        <span class="log-time">${log.timestamp}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderSearchLog() {
+    const container = document.getElementById('searchLogList');
+    const countSpan = document.getElementById('searchCount');
+    countSpan.innerText = searchLogs.length;
+    if(searchLogs.length === 0) {
+      container.innerHTML = '<div class="empty-log">No search records yet</div>';
+      return;
+    }
+    container.innerHTML = searchLogs.map(log => `
+      <div class="log-entry">
+        <i class="fas fa-search"></i>
+        <span>ID: <strong>${escapeHtml(log.searchedId)}</strong> — ${log.found ? `<span style="color:#27ae60;">✓ Found: ${escapeHtml(log.studentName)}</span>` : '<span style="color:#e67e22;">✗ Not found</span>'}</span>
+        <span class="log-time">${log.timestamp}</span>
+      </div>
+    `).join('');
+  }
+
+  const appWrapper = document.getElementById('appWrapper');
+  const modalOverlay = document.getElementById('searchModal');
+  const modalCard = document.getElementById('modalCard');
+  const setupOverlay = document.getElementById('setupOverlay');
+  const institutionInput = document.getElementById('institutionNameInput');
+  const setupBtn = document.getElementById('setupConfirmBtn');
+  const institutionDisplay = document.getElementById('institutionNameDisplay');
+
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+  function playErrorSound() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = 620; gain.gain.value = 0.3;
+      osc.type = 'sine';
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.6);
+      osc.stop(audioCtx.currentTime + 0.5);
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch(e) {}
+  }
+
+  function playSuccessSound() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = 880; gain.gain.value = 0.2;
+      osc.type = 'sine';
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+      osc.stop(audioCtx.currentTime + 0.3);
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch(e) {}
+  }
+
+  function showToast(msg, isError = false) {
+    const existing = document.querySelector('.toast-notify');
+    if(existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'toast-notify';
+    toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`;
+    toast.style.background = isError ? "#bc5a2c" : "#1f6e43";
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 400); }, 2800);
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('active');
+    appWrapper.classList.remove('blur-active');
+    modalCard.innerHTML = '';
+  }
+
+  function showStudentModal(student) {
+    modalCard.innerHTML = `
+      <div class="modal-header"><h3><i class="fas fa-user-graduate"></i> Student Details</h3><button class="close-modal" id="closeModalBtn"><i class="fas fa-times"></i></button></div>
+      <div class="info-row"><span class="info-label">Institution:</span><span>${escapeHtml(institutionName)}</span></div>
+      <div class="info-row"><span class="info-label">Name:</span><span>${escapeHtml(student.name)}</span></div>
+      <div class="info-row"><span class="info-label">Class:</span><span>${escapeHtml(student.className)}</span></div>
+      <div class="info-row"><span class="info-label">Subject:</span><span>${escapeHtml(student.subject)}</span></div>
+      <div class="info-row"><span class="info-label">ID:</span><span>${escapeHtml(student.id)}</span></div>
+      <button class="btn-modal-close" id="modalCloseBtn">Got it</button>`;
+    appWrapper.classList.add('blur-active');
+    modalOverlay.classList.add('active');
+    const close1 = document.getElementById('closeModalBtn'), close2 = document.getElementById('modalCloseBtn');
+    if(close1) close1.addEventListener('click', closeModal);
+    if(close2) close2.addEventListener('click', closeModal);
+    modalOverlay.onclick = (e) => { if(e.target === modalOverlay) closeModal(); };
+  }
+
+  function showTCConfirmationModal(student) {
+    playSuccessSound();
+    modalCard.innerHTML = `
+      <div class="modal-header"><h3><i class="fas fa-file-alt"></i> TC Issued Successfully</h3><button class="close-modal" id="closeModalBtn"><i class="fas fa-times"></i></button></div>
+      <div style="text-align:center"><i class="fas fa-check-circle" style="font-size:4rem; color:#27ae60; margin-bottom:1rem;"></i>
+      <p style="font-size:1.2rem; font-weight:600;">Transfer Certificate Issued</p>
+      <div style="background:#fef9f0; border-radius:1rem; padding:1rem; margin:1rem 0; text-align:left;">
+        <div class="info-row"><span class="info-label">Institution:</span><span>${escapeHtml(institutionName)}</span></div>
+        <div class="info-row"><span class="info-label">Name:</span><span>${escapeHtml(student.name)}</span></div>
+        <div class="info-row"><span class="info-label">Class:</span><span>${escapeHtml(student.className)}</span></div>
+        <div class="info-row"><span class="info-label">Subject:</span><span>${escapeHtml(student.subject)}</span></div>
+        <div class="info-row"><span class="info-label">ID:</span><span>${escapeHtml(student.id)}</span></div>
+      </div>
+      <p style="color:#e67e22;"><i class="fas fa-stamp"></i> TC issued and student removed.</p></div>
+      <button class="btn-modal-close" id="modalCloseBtn">Close</button>`;
+    appWrapper.classList.add('blur-active');
+    modalOverlay.classList.add('active');
+    const close1 = document.getElementById('closeModalBtn'), close2 = document.getElementById('modalCloseBtn');
+    if(close1) close1.addEventListener('click', closeModal);
+    if(close2) close2.addEventListener('click', closeModal);
+    modalOverlay.onclick = (e) => { if(e.target === modalOverlay) closeModal(); };
+  }
+
+  function showNotFoundModal(id) {
+    playErrorSound();
+    modalCard.innerHTML = `
+      <div class="modal-header"><h3><i class="fas fa-exclamation-triangle"></i> Not Found</h3><button class="close-modal" id="closeErrorModalBtn"><i class="fas fa-times"></i></button></div>
+      <div style="text-align:center"><i class="fas fa-user-slash" style="font-size:3rem; color:#e67e22; margin-bottom:0.5rem;"></i>
+      <p style="margin:1rem 0;">No student with ID:</p>
+      <p style="background:#f5efe8; padding:10px; border-radius:60px; font-weight:700;">${escapeHtml(id)}</p>
+      <button class="btn-modal-close" id="modalErrorCloseBtn" style="margin-top:1rem;">Close</button></div>`;
+    appWrapper.classList.add('blur-active');
+    modalOverlay.classList.add('active');
+    const close1 = document.getElementById('closeErrorModalBtn'), close2 = document.getElementById('modalErrorCloseBtn');
+    if(close1) close1.addEventListener('click', closeModal);
+    if(close2) close2.addEventListener('click', closeModal);
+    modalOverlay.onclick = (e) => { if(e.target === modalOverlay) closeModal(); };
+  }
+
+  function setInstitution() {
+    const name = institutionInput.value.trim();
+    if(!name) { showToast("Please enter institution name!", true); return false; }
+    institutionName = name;
+    institutionDisplay.innerText = institutionName;
+    setupOverlay.classList.add('hidden');
+    showToast(`Welcome to ${institutionName} 🎓`);
+    return true;
+  }
+
+  setupBtn.addEventListener('click', setInstitution);
+  institutionInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') setInstitution(); });
+
+  function addStudent() {
+    if(!institutionName) { showToast("Please setup institution first!", true); return; }
+    const name = document.getElementById('studentName').value.trim();
+    const className = document.getElementById('studentClass').value.trim();
+    const subject = document.getElementById('studentSubject').value.trim();
+    const id = document.getElementById('studentId').value.trim();
+    if(!name || !className || !subject || !id) { showToast("All fields required!", true); return; }
+    if(students.some(s => s.id === id)) { showToast(`ID ${id} already exists!`, true); return; }
+    if(students.length >= 100) { showToast("Database full!", true); return; }
+    const newStudent = { name, className, subject, id };
+    students.push(newStudent);
+    document.getElementById('studentName').value = '';
+    document.getElementById('studentClass').value = '';
+    document.getElementById('studentSubject').value = '';
+    document.getElementById('studentId').value = '';
+    renderDistributions();
+    addEntryLog(newStudent);
+    showToast(`✅ ${name} added successfully!`);
+  }
+
+  function searchStudent() {
+    if(!institutionName) { showToast("Please setup institution first!", true); return; }
+    const searchId = document.getElementById('searchId').value.trim();
+    if(!searchId) { showToast("Enter ID to search", true); return; }
+    const found = students.find(s => s.id === searchId);
+    if(found) {
+      showStudentModal(found);
+      addSearchLog(searchId, true, found.name);
+    } else {
+      showNotFoundModal(searchId);
+      addSearchLog(searchId, false, null);
+    }
+  }
+
+  function giveTC() {
+    if(!institutionName) { showToast("Please setup institution first!", true); return; }
+    const id = document.getElementById('tcId').value.trim();
+    if(!id) { showToast("Enter ID to issue TC", true); return; }
+    const index = students.findIndex(s => s.id === id);
+    if(index === -1) { showToast(`Student ${id} not found!`, true); return; }
+    const removed = { ...students[index] };
+    students.splice(index, 1);
+    renderDistributions();
+    addTCLog(removed);
+    showTCConfirmationModal(removed);
+    document.getElementById('tcId').value = '';
+  }
+
+  function renderDistributions() {
+    const totalSpan = document.getElementById('totalStudentsLive');
+    totalSpan.innerText = students.length;
+
+    // Class-wise
+    const classMap = new Map();
+    students.forEach(s => { if(!classMap.has(s.className)) classMap.set(s.className, []); classMap.get(s.className).push(s); });
+    const classDiv = document.getElementById('classDistribution');
+    if(students.length === 0) classDiv.innerHTML = '<div style="text-align:center; color:#aaa; padding:2rem;">No students</div>';
+    else classDiv.innerHTML = Array.from(classMap.entries()).sort().map(([cls, list]) => `
+      <div class="dist-item">
+        <div class="dist-header"><span><i class="fas fa-chalkboard"></i> ${escapeHtml(cls)}</span><span>${list.length} students</span></div>
+        <div class="student-list-dist">${list.slice(0,6).map(s => `<span class="student-chip">${escapeHtml(s.name)} (${escapeHtml(s.subject)})</span>`).join('')}${list.length>6 ? `<span class="student-chip">+${list.length-6} more</span>` : ''}</div>
+      </div>
+    `).join('');
+
+    // Subject-wise
+    const subMap = new Map();
+    students.forEach(s => { if(!subMap.has(s.subject)) subMap.set(s.subject, []); subMap.get(s.subject).push(s); });
+    const subDiv = document.getElementById('subjectDistribution');
+    if(students.length === 0) subDiv.innerHTML = '<div style="text-align:center; color:#aaa; padding:2rem;">No students</div>';
+    else subDiv.innerHTML = Array.from(subMap.entries()).sort().map(([sub, list]) => `
+      <div class="dist-item">
+        <div class="dist-header"><span><i class="fas fa-book"></i> ${escapeHtml(sub)}</span><span>${list.length} students</span></div>
+        <div class="student-list-dist">${list.slice(0,6).map(s => `<span class="student-chip">${escapeHtml(s.name)} (${escapeHtml(s.className)})</span>`).join('')}${list.length>6 ? `<span class="student-chip">+${list.length-6} more</span>` : ''}</div>
+      </div>
+    `).join('');
+  }
+
+  // Tab switching
+  document.getElementById('classTabBtn').addEventListener('click', () => {
+    document.getElementById('classTabBtn').classList.add('active');
+    document.getElementById('subjectTabBtn').classList.remove('active');
+    document.getElementById('classDistribution').style.display = 'block';
+    document.getElementById('subjectDistribution').style.display = 'none';
+  });
+  document.getElementById('subjectTabBtn').addEventListener('click', () => {
+    document.getElementById('subjectTabBtn').classList.add('active');
+    document.getElementById('classTabBtn').classList.remove('active');
+    document.getElementById('classDistribution').style.display = 'none';
+    document.getElementById('subjectDistribution').style.display = 'block';
+  });
+
+  document.getElementById('addStudentBtn').addEventListener('click', addStudent);
+  document.getElementById('searchStudentBtn').addEventListener('click', searchStudent);
+  document.getElementById('giveTcBtn').addEventListener('click', giveTC);
+  document.getElementById('searchId').addEventListener('keypress', (e) => { if(e.key === 'Enter') searchStudent(); });
+  document.getElementById('tcId').addEventListener('keypress', (e) => { if(e.key === 'Enter') giveTC(); });
+
+  renderDistributions();
+  renderEntryLog();
+  renderTCLog();
+  renderSearchLog();
+</script>
+</body>
+</html>
